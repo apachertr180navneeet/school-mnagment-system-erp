@@ -2,66 +2,104 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>School ERP</title>
+<title>School ERP</title>
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<!-- Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
-    <style>
-        body {
-            background: #f4f6f9;
-        }
+<style>
+/* RESET */
+body {
+    margin: 0;
+    padding: 0;
+    background: #f4f6f9;
+}
 
-        .main-sidebar {
-            width: 250px;
-            position: fixed;
-            height: 100vh;
-            background: #0f172a;
-        }
+/* SIDEBAR */
+.main-sidebar {
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: #0f172a;
+    color: #fff;
+    z-index: 1000;
+}
 
-        .content-wrapper {
-            margin-left: 250px;
-            padding: 20px;
-        }
+/* SIDEBAR LINKS */
+.sidebar a {
+    display: block;
+    padding: 12px 20px;
+    color: #cbd5e1;
+    text-decoration: none;
+    transition: 0.3s;
+}
 
-        .main-header {
-            margin-left: 250px;
-        }
+.sidebar a:hover {
+    background: #1e293b;
+    color: #fff;
+}
 
-        .sidebar a {
-            color: #cbd5e1;
-            padding: 10px 20px;
-            display: block;
-            text-decoration: none;
-        }
+.sidebar .active {
+    background: #2563eb;
+    color: #fff;
+}
 
-        .sidebar a:hover {
-            background: #1e293b;
-            color: #fff;
-        }
-    </style>
+.sidebar .collapse a {
+    font-size: 14px;
+}
+
+/* HEADER */
+.main-header {
+    position: fixed;
+    top: 0;
+    left: 250px;
+    right: 0;
+    z-index: 999;
+}
+
+/* CONTENT */
+.content-wrapper {
+    margin-left: 250px;
+    margin-top: 70px;
+    padding: 20px;
+}
+
+/* FOOTER */
+.main-footer {
+    margin-left: 250px;
+    background: #fff;
+}
+</style>
 
 </head>
 
-<body>
+<!-- FLEX LAYOUT FOR STICKY FOOTER -->
+<body class="d-flex flex-column min-vh-100">
 
-    @include('admin.body.header')
-    @include('admin.body.sidebar')
+<!-- HEADER -->
+@include('admin.body.header')
 
-    <div class="content-wrapper">
-        @yield('admin')
-    </div>
+<!-- SIDEBAR -->
+@include('admin.body.sidebar')
 
-    @include('admin.body.footer')
+<!-- CONTENT -->
+<div class="content-wrapper flex-grow-1">
+    @yield('admin')
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Footer -->
+@include('admin.body.footer')
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
-
 </html>

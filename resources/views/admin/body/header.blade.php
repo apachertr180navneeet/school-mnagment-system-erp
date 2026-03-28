@@ -17,7 +17,7 @@
                     <i class="bi bi-bell fs-5"></i>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item">New Student</a></li>
+                    <li><a class="dropdown-item">New Notification</a></li>
                 </ul>
             </div>
 

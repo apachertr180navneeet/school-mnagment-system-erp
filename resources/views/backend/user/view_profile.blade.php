@@ -1,88 +1,69 @@
 @extends('admin.admin_master')
 @section('admin')
 
+<div class="container-fluid">
 
- <div class="content-wrapper">
-	  <div class="container-full">
-		<!-- Content Header (Page header) -->
-		 
+<div class="row justify-content-center">
+<div class="col-lg-8">
 
-		<!-- Main content -->
-		<section class="content">
-		  <div class="row">
-			  
-			 
+<div class="card shadow-sm border-0">
 
-			<div class="col-12">
+    <!-- Header -->
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">User Profile</h5>
 
+        <a href="{{ route('profile.edit') }}" class="btn btn-light btn-sm">
+            <i class="bi bi-pencil-square"></i> Edit Profile
+        </a>
+    </div>
 
+    <!-- Body -->
+    <div class="card-body text-center">
 
+        <!-- Profile Image -->
+        <img 
+        src="{{ (!empty($user->image)) ? url('upload/user_images/'.$user->image) : url('upload/no_image.jpg') }}"
+        class="rounded-circle mb-3"
+        width="120" height="120">
 
-<div class="box box-widget widget-user">
-					<!-- Add the bg color to the header using any of the bg-* classes -->
- <div class="widget-user-header bg-black">
-	  <h3 class="widget-user-username">User Name : {{ $user->name }}</h3>
+        <!-- Name -->
+        <h4 class="fw-bold">{{ $user->name }}</h4>
+        <p class="text-muted">{{ $user->usertype }}</p>
 
-	   <a href="{{ route('profile.edit') }}" style="float: right;" class="btn btn-rounded btn-success mb-5"> Edit Profile</a>	
-	  
-	  <h6 class="widget-user-desc">User Type : {{ $user->usertype }}</h6>
-	  <h6 class="widget-user-desc">User Email : {{ $user->email }}</h6>
+        <!-- Email -->
+        <p class="mb-4">
+            <i class="bi bi-envelope"></i> {{ $user->email }}
+        </p>
 
-	
-					</div>
-					<div class="widget-user-image">
-  <img class="rounded-circle"
-   src="{{ (!empty($user->image))? url('upload/user_images/'.$user->image):url('upload/no_image.jpg') }} " alt="User Avatar">
-					</div>
-					<div class="box-footer">
-					  <div class="row">
-						<div class="col-sm-4">
-						  <div class="description-block">
-							<h5 class="description-header">Mobile No</h5>
-							<span class="description-text">{{ $user->mobile }}</span>
-						  </div>
-						  <!-- /.description-block -->
-						</div>
-						<!-- /.col -->
-						<div class="col-sm-4 br-1 bl-1">
-						  <div class="description-block">
-							<h5 class="description-header">Address</h5>
-							<span class="description-text">{{ $user->address }}</span>
-						  </div>
-						  <!-- /.description-block -->
-						</div>
-						<!-- /.col -->
-						<div class="col-sm-4">
-						  <div class="description-block">
-							<h5 class="description-header">Gender</h5>
-							<span class="description-text">{{ $user->gender }}</span>
-						  </div>
-						  <!-- /.description-block -->
-						</div>
-						<!-- /.col -->
-					  </div>
-					  <!-- /.row -->
-					</div>
-				  </div>
+        <hr>
 
+        <!-- Info Grid -->
+        <div class="row text-start">
 
- 
+            <div class="col-md-4">
+                <h6 class="text-muted">Mobile</h6>
+                <p class="fw-semibold">{{ $user->mobile ?? 'N/A' }}</p>
+            </div>
 
+            <div class="col-md-4">
+                <h6 class="text-muted">Address</h6>
+                <p class="fw-semibold">{{ $user->address ?? 'N/A' }}</p>
+            </div>
 
-			  
-			 
-			</div>
-			<!-- /.col -->
-		  </div>
-		  <!-- /.row -->
-		</section>
-		<!-- /.content -->
-	  
-	  </div>
-  </div>
+            <div class="col-md-4">
+                <h6 class="text-muted">Gender</h6>
+                <p class="fw-semibold">{{ $user->gender ?? 'N/A' }}</p>
+            </div>
 
+        </div>
 
+    </div>
 
+</div>
 
+</div>
+</div>
+
+</div>
 
 @endsection

@@ -4,141 +4,186 @@ namespace App\Http\Controllers\Backend\Account;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
 use App\Models\AssignStudent;
-use App\Models\User;
-use App\Models\DiscountStudent;
 use App\Models\FeeCategoryAmount;
-
 use App\Models\StudentYear;
 use App\Models\StudentClass;
-use App\Models\StudentGroup;
-use App\Models\StudentShift;
-use App\Models\ExamType;
-use DB;
-use PDF;
-
-use App\Models\AccountStudentFee;
 use App\Models\FeeCategory;
+use App\Models\AccountStudentFee;
+use Illuminate\Support\Facades\Log;
 
 class StudentFeeController extends Controller
 {
+
+    /**
+     * 🔹 View all student fee records
+     */
     public function StudentFeeView(){
+        try {
 
-    	$data['allData'] = AccountStudentFee::all(); 
-    	return view('backend.account.student_fee.student_fee_view',$data);
+            $data['allData'] = AccountStudentFee::all();
+            return view('backend.account.student_fee.student_fee_view', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('StudentFeeView Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load data!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
+    /**
+     * 🔹 Show add student fee form
+     */
     public function StudentFeeAdd(){
-    	$data['years'] = StudentYear::all();
-    	$data['classes'] = StudentClass::all();
-    	$data['fee_categories'] = FeeCategory::all();
-    	return view('backend.account.student_fee.student_fee_add',$data);
+        try {
 
+            $data['years'] = StudentYear::all();
+            $data['classes'] = StudentClass::all();
+            $data['fee_categories'] = FeeCategory::all();
+
+            return view('backend.account.student_fee.student_fee_add', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('StudentFeeAdd Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Unable to load page!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
-  public function StudentFeeGetStudent(Request $request){
+    /**
+     * 🔹 Get students and calculate fee (AJAX)
+     */
+    public function StudentFeeGetStudent(Request $request){
+        try {
 
-   	$year_id = $request->year_id;
-   	$class_id = $request->class_id;
-   	$fee_category_id = $request->fee_category_id;
-   	$date = date('Y-m',strtotime($request->date));    	   
-    	 
-  $data = AssignStudent::with(['discount'])->where('year_id',$year_id)->where('class_id',$class_id)->get();
-    	 
-    	 $html['thsource']  = '<th>ID No</th>';
-    	 $html['thsource'] .= '<th>Student Name</th>';
-    	 $html['thsource'] .= '<th>Father Name</th>';
-    	 $html['thsource'] .= '<th>Original Fee </th>';
-      	 $html['thsource'] .= '<th>Discount Amount</th>';
-      	 $html['thsource'] .= '<th>Fee (This Student)</th>';
-      	 $html['thsource'] .= '<th>Select</th>';
+            $year_id = $request->year_id;
+            $class_id = $request->class_id;
+            $fee_category_id = $request->fee_category_id;
+            $date = date('Y-m', strtotime($request->date));
 
-    	 foreach ($data as $key => $std) {
-$registrationfee = FeeCategoryAmount::where('fee_category_id',$fee_category_id)->where('class_id',$std->class_id)->first();
+            // Get students with discount
+            $data = AssignStudent::with(['discount'])
+                        ->where('year_id', $year_id)
+                        ->where('class_id', $class_id)
+                        ->get();
 
-$accountstudentfees = AccountStudentFee::where('student_id',$std->student_id)->where('year_id',$std->year_id)->where('class_id',$std->class_id)->where('fee_category_id',$fee_category_id)->where('date',$date)->first();
+            // Table header
+            $html['thsource']  = '<th>ID No</th>';
+            $html['thsource'] .= '<th>Student Name</th>';
+            $html['thsource'] .= '<th>Father Name</th>';
+            $html['thsource'] .= '<th>Original Fee</th>';
+            $html['thsource'] .= '<th>Discount</th>';
+            $html['thsource'] .= '<th>Final Fee</th>';
+            $html['thsource'] .= '<th>Select</th>';
 
-if($accountstudentfees !=null) {
- 	$checked = 'checked';
- }else{
- 	$checked = '';
- }  	 	 
- 	$color = 'success';
- 	$html[$key]['tdsource']  = '<td>'.$std['student']['id_no']. '<input type="hidden" name="fee_category_id" value= " '.$fee_category_id.' " >'.'</td>';
+            foreach ($data as $key => $std) {
 
- 	$html[$key]['tdsource']  .= '<td>'.$std['student']['name']. '<input type="hidden" name="year_id" value= " '.$std->year_id.' " >'.'</td>';
+                // Get fee amount
+                $registrationfee = FeeCategoryAmount::where('fee_category_id', $fee_category_id)
+                                    ->where('class_id', $std->class_id)
+                                    ->first();
 
- 	$html[$key]['tdsource']  .= '<td>'.$std['student']['fname']. '<input type="hidden" name="class_id" value= " '.$std->class_id.' " >'.'</td>';
+                if (!$registrationfee) continue;
 
- 	$html[$key]['tdsource']  .= '<td>'.$registrationfee->amount.'$'.'<input type="hidden" name="date" value= " '.$date.' " >'.'</td>';
+                // Check if already paid
+                $accountstudentfees = AccountStudentFee::where('student_id', $std->student_id)
+                    ->where('year_id', $std->year_id)
+                    ->where('class_id', $std->class_id)
+                    ->where('fee_category_id', $fee_category_id)
+                    ->where('date', $date)
+                    ->first();
 
- 	$html[$key]['tdsource'] .= '<td>'.$std['discount']['discount'].'%'.'</td>';
-  
- 	 $orginalfee = $registrationfee->amount;
- 	 $discount = $std['discount']['discount'];
- 	 $discountablefee = $discount/100*$orginalfee;
- 	 $finalfee = (int)$orginalfee-(int)$discountablefee;    	 	 
+                $checked = ($accountstudentfees) ? 'checked' : '';
 
- 	$html[$key]['tdsource'] .='<td>'. '<input type="text" name="amount[]" value="'.$finalfee.' " class="form-control" readonly'.'</td>';
- 	 
- 	$html[$key]['tdsource'] .='<td>'.'<input type="hidden" name="student_id[]" value="'.$std->student_id.'">'.'<input type="checkbox" name="checkmanage[]" id="'.$key.'" value="'.$key.'" '.$checked.' style="transform: scale(1.5);margin-left: 10px;"> <label for="'.$key.'"> </label> '.'</td>'; 
+                // Calculate fee
+                $originalFee = $registrationfee->amount;
+                $discount = $std['discount']['discount'] ?? 0;
+                $discountAmount = ($discount / 100) * $originalFee;
+                $finalFee = (int)$originalFee - (int)$discountAmount;
 
-    	 }  
-    	return response()->json(@$html);
+                // Build row
+                $html[$key]['tdsource']  = '<td>'.$std['student']['id_no'].'<input type="hidden" name="fee_category_id" value="'.$fee_category_id.'"></td>';
+                $html[$key]['tdsource'] .= '<td>'.$std['student']['name'].'<input type="hidden" name="year_id" value="'.$std->year_id.'"></td>';
+                $html[$key]['tdsource'] .= '<td>'.$std['student']['fname'].'<input type="hidden" name="class_id" value="'.$std->class_id.'"></td>';
+                $html[$key]['tdsource'] .= '<td>'.$originalFee.'<input type="hidden" name="date" value="'.$date.'"></td>';
+                $html[$key]['tdsource'] .= '<td>'.$discount.'%</td>';
+                $html[$key]['tdsource'] .= '<td><input type="text" name="amount[]" value="'.$finalFee.'" class="form-control" readonly></td>';
+                $html[$key]['tdsource'] .= '<td>
+                    <input type="hidden" name="student_id[]" value="'.$std->student_id.'">
+                    <input type="checkbox" name="checkmanage[]" value="'.$key.'" '.$checked.'>
+                </td>';
+            }
 
-   } // end mehtod
+            return response()->json($html);
+
+        } catch (\Exception $e) {
+
+            Log::error('StudentFeeGetStudent Error: '.$e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to load students'
+            ], 500);
+        }
+    }
 
 
-  
-
+    /**
+     * 🔹 Store student fee data
+     */
     public function StudentFeeStore(Request $request){
-        
-    	$date = date('Y-m',strtotime($request->date));
+        try {
 
-    	AccountStudentFee::where('year_id',$request->year_id)->where('class_id',$request->class_id)->where('fee_category_id',$request->fee_category_id)->where('date',$request->date)->delete();
+            $date = date('Y-m', strtotime($request->date));
 
-    	$checkdata = $request->checkmanage;
+            // Delete old records
+            AccountStudentFee::where('year_id', $request->year_id)
+                ->where('class_id', $request->class_id)
+                ->where('fee_category_id', $request->fee_category_id)
+                ->where('date', $request->date)
+                ->delete();
 
-    	if ($checkdata !=null) {
-    		for ($i=0; $i <count($checkdata) ; $i++) { 
-    			$data = new AccountStudentFee();
-    			$data->year_id = $request->year_id;
-    			$data->class_id = $request->class_id;
-    			$data->date = $date;
-    			$data->fee_category_id = $request->fee_category_id;
-    			$data->student_id = $request->student_id[$checkdata[$i]];
-    			$data->amount = $request->amount[$checkdata[$i]];
-    			$data->save();
-    		} // end for loop
-    	} // end if 
+            $checkdata = $request->checkmanage;
 
-    	if (!empty(@$data) || empty($checkdata)) {
+            if ($checkdata != null) {
 
-    	$notification = array(
-    		'message' => 'Well Done Data Successfully Updated',
-    		'alert-type' => 'success'
-    	);
+                foreach ($checkdata as $key) {
 
-    	return redirect()->route('student.fee.view')->with($notification);
-    	}else{
+                    $data = new AccountStudentFee();
+                    $data->year_id = $request->year_id;
+                    $data->class_id = $request->class_id;
+                    $data->date = $date;
+                    $data->fee_category_id = $request->fee_category_id;
+                    $data->student_id = $request->student_id[$key];
+                    $data->amount = $request->amount[$key];
+                    $data->save();
+                }
+            }
 
-    		$notification = array(
-    		'message' => 'Sorry Data not Saved',
-    		'alert-type' => 'error'
-    	);
+            return redirect()->route('student.fee.view')->with([
+                'message' => 'Student Fee Updated Successfully',
+                'alert-type' => 'success'
+            ]);
 
-    	return redirect()->back()->with($notification);
+        } catch (\Exception $e) {
 
-    	} 
+            Log::error('StudentFeeStore Error: '.$e->getMessage());
 
-    } // end method 
-
-    
-
-
+            return back()->with([
+                'message' => 'Fee save failed!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 }
- 

@@ -7,85 +7,169 @@ use Illuminate\Http\Request;
 use Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class ProfileController extends Controller
 {
+
+    /**
+     * 🔹 Display user profile
+     */
     public function ProfileView(){
-    	$id = Auth::user()->id;
-    	$user = User::find($id);
+        try {
+            $id = Auth::user()->id;
+            $user = User::findOrFail($id);
 
-    	return view('backend.user.view_profile',compact('user'));
+            return view('backend.user.view_profile', compact('user'));
+
+        } catch (\Exception $e) {
+            Log::error('ProfileView Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Something went wrong!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
+    /**
+     * 🔹 Show edit profile form
+     */
     public function ProfileEdit(){
-    	$id = Auth::user()->id;
-    	$editData = User::find($id);
-    	return view('backend.user.edit_profile',compact('editData'));
+        try {
+            $id = Auth::user()->id;
+            $editData = User::findOrFail($id);
+
+            return view('backend.user.edit_profile', compact('editData'));
+
+        } catch (\Exception $e) {
+            Log::error('ProfileEdit Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Unable to load profile!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
+    /**
+     * 🔹 Update user profile
+     */
     public function ProfileStore(Request $request){
+        try {
 
-    	$data = User::find(Auth::user()->id);
-    	$data->name = $request->name;
-    	$data->email = $request->email;
-    	$data->mobile = $request->mobile;
-    	$data->address = $request->address;
-    	$data->gender = $request->gender;
+            // Fetch authenticated user
+            $data = User::findOrFail(Auth::user()->id);
 
-    	if ($request->file('image')) {
-    		$file = $request->file('image');
-    		@unlink(public_path('upload/user_images/'.$data->image));
-    		$filename = date('YmdHi').$file->getClientOriginalName();
-    		$file->move(public_path('upload/user_images'),$filename);
-    		$data['image'] = $filename;
-    	}
-    	$data->save();
+            // Assign form values
+            $data->name    = $request->name;
+            $data->email   = $request->email;
+            $data->mobile  = $request->mobile;
+            $data->address = $request->address;
+            $data->gender  = $request->gender;
 
-    	$notification = array(
-    		'message' => 'User Profile Updated Successfully',
-    		'alert-type' => 'success'
-    	);
+            // Handle image upload
+            if ($request->file('image')) {
 
-    	return redirect()->route('profile.view')->with($notification);
+                $file = $request->file('image');
 
-    } // End Method 
+                // Delete old image if exists
+                if (!empty($data->image) && file_exists(public_path('upload/user_images/'.$data->image))) {
+                    unlink(public_path('upload/user_images/'.$data->image));
+                }
 
+                // Generate unique filename
+                $filename = date('YmdHi') . '_' . $file->getClientOriginalName();
 
- 
- 	public function PasswordView(){
- 		return view('backend.user.edit_password');
- 	}
+                // Move file to public folder
+                $file->move(public_path('upload/user_images'), $filename);
 
+                // Save filename
+                $data->image = $filename;
+            }
 
+            // Save data
+            $data->save();
 
- 	public function PasswordUpdate(Request $request){
- 		$validatedData = $request->validate([
-    		'oldpassword' => 'required',
-    		'password' => 'required|confirmed',
-    	]);
+            return redirect()->route('profile.view')->with([
+                'message' => 'User Profile Updated Successfully',
+                'alert-type' => 'success'
+            ]);
 
+        } catch (\Exception $e) {
 
-    	$hashedPassword = Auth::user()->password;
-    	if (Hash::check($request->oldpassword,$hashedPassword)) {
-    		$user = User::find(Auth::id());
-    		$user->password = Hash::make($request->password);
-    		$user->save();
-    		Auth::logout();
-    		return redirect()->route('login');
-    	}else{
-    		return redirect()->back();
-    	}
+            Log::error('ProfileStore Error: '.$e->getMessage());
 
-
- 	} // End Metod 
+            return back()->with([
+                'message' => 'Profile update failed!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 
+    /**
+     * 🔹 Show change password page
+     */
+    public function PasswordView(){
+        try {
+            return view('backend.user.edit_password');
+
+        } catch (\Exception $e) {
+            Log::error('PasswordView Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Unable to load page!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 
+    /**
+     * 🔹 Update user password
+     */
+    public function PasswordUpdate(Request $request){
+        try {
 
+            // Validate request
+            $request->validate([
+                'oldpassword' => 'required',
+                'password' => 'required|confirmed|min:6',
+            ]);
 
+            // Check current password
+            if (!Hash::check($request->oldpassword, Auth::user()->password)) {
+                return back()->with([
+                    'message' => 'Current password is incorrect!',
+                    'alert-type' => 'error'
+                ]);
+            }
+
+            // Update password
+            $user = User::findOrFail(Auth::id());
+            $user->password = Hash::make($request->password);
+            $user->save();
+
+            // Logout after password change
+            Auth::logout();
+
+            return redirect()->route('login')->with([
+                'message' => 'Password updated successfully. Please login again.',
+                'alert-type' => 'success'
+            ]);
+
+        } catch (\Exception $e) {
+
+            Log::error('PasswordUpdate Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Password update failed!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 }
- 

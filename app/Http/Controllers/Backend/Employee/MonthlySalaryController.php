@@ -4,89 +4,137 @@ namespace App\Http\Controllers\Backend\Employee;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\AssignStudent;
-use App\Models\User;
-use App\Models\DiscountStudent;
-
-use App\Models\StudentYear;
-use App\Models\StudentClass;
-use App\Models\StudentGroup;
-use App\Models\StudentShift;
-use DB;
-use PDF;
-
-use App\Models\Designation;
-use App\Models\EmployeeSallaryLog;
-
 use App\Models\EmployeeAttendance;
+use Illuminate\Support\Facades\Log;
+use PDF;
 
 class MonthlySalaryController extends Controller
 {
-    public function MonthlySalaryView(){
-    	return view('backend.employee.monthly_salary.monthly_salary_view');
 
+    /**
+     * 🔹 Show monthly salary page
+     */
+    public function MonthlySalaryView(){
+        try {
+
+            return view('backend.employee.monthly_salary.monthly_salary_view');
+
+        } catch (\Exception $e) {
+
+            Log::error('MonthlySalaryView Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load page!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
-  public function MonthlySalaryGet(Request $request){
-		
-	 	$date = date('Y-m',strtotime($request->date));
-    	 if ($date !='') {
-    	 	$where[] = ['date','like',$date.'%'];
-    	 }
-    	 
-    	 $data = EmployeeAttendance::select('employee_id')->groupBy('employee_id')->with(['user'])->where($where)->get();
-    	 // dd($allStudent);
-    	 $html['thsource']  = '<th>SL</th>';
-    	 $html['thsource'] .= '<th>Employee Name</th>';
-    	 $html['thsource'] .= '<th>Basic Salary</th>';
-    	 $html['thsource'] .= '<th>Salary This Month</th>';
-    	 $html['thsource'] .= '<th>Action</th>';
+    /**
+     * 🔹 Get monthly salary data (AJAX)
+     */
+    public function MonthlySalaryGet(Request $request){
+        try {
+
+            $date = date('Y-m', strtotime($request->date));
+            $where = [];
+
+            if ($date != '') {
+                $where[] = ['date', 'like', $date.'%'];
+            }
+
+            // Get unique employees
+            $data = EmployeeAttendance::select('employee_id')
+                        ->groupBy('employee_id')
+                        ->with(['user'])
+                        ->where($where)
+                        ->get();
+
+            // Table header
+            $html['thsource']  = '<th>SL</th>';
+            $html['thsource'] .= '<th>Employee Name</th>';
+            $html['thsource'] .= '<th>Basic Salary</th>';
+            $html['thsource'] .= '<th>Salary This Month</th>';
+            $html['thsource'] .= '<th>Action</th>';
+
+            foreach ($data as $key => $attend) {
+
+                // Get attendance for each employee
+                $totalattend = EmployeeAttendance::where($where)
+                                    ->where('employee_id', $attend->employee_id)
+                                    ->get();
+
+                $absentcount = count($totalattend->where('attend_status', 'Absent'));
+
+                $salary = (float) $attend['user']['salary'];
+                $salaryperday = $salary / 30;
+                $totalsalaryminus = $absentcount * $salaryperday;
+                $totalsalary = $salary - $totalsalaryminus;
+
+                // Build row
+                $html[$key]['tdsource']  = '<td>'.($key+1).'</td>';
+                $html[$key]['tdsource'] .= '<td>'.$attend['user']['name'].'</td>';
+                $html[$key]['tdsource'] .= '<td>'.$salary.'</td>';
+                $html[$key]['tdsource'] .= '<td>'.$totalsalary.'</td>';
+                $html[$key]['tdsource'] .= '<td>
+                    <a class="btn btn-sm btn-success" target="_blank"
+                    href="'.route("employee.monthly.salary.payslip", $attend->employee_id).'">
+                    Payslip</a>
+                </td>';
+            }
+
+            return response()->json($html);
+
+        } catch (\Exception $e) {
+
+            Log::error('MonthlySalaryGet Error: '.$e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to load salary data'
+            ], 500);
+        }
+    }
 
 
-    	 foreach ($data as $key => $attend) {
-    	 	$totalattend = EmployeeAttendance::with(['user'])->where($where)->where('employee_id',$attend->employee_id)->get();
-    	 	$absentcount = count($totalattend->where('attend_status','Absent'));
+    /**
+     * 🔹 Generate monthly salary PDF
+     */
+    public function MonthlySalaryPayslip(Request $request, $employee_id){
+        try {
 
-    	 	$color = 'success';
-    	 	$html[$key]['tdsource']  = '<td>'.($key+1).'</td>';
-    	 	$html[$key]['tdsource'] .= '<td>'.$attend['user']['name'].'</td>';
-    	 	$html[$key]['tdsource'] .= '<td>'.$attend['user']['salary'].'</td>';
-    	 	 
-    	 	
-    	 	$salary = (float)$attend['user']['salary'];
-    	 	$salaryperday = (float)$salary/30;
-    	 	$totalsalaryminus = (float)$absentcount*(float)$salaryperday;
-    	 	$totalsalary = (float)$salary-(float)$totalsalaryminus;
+            // Get any record to determine month
+            $attendance = EmployeeAttendance::where('employee_id', $employee_id)->firstOrFail();
 
-    	 	$html[$key]['tdsource'] .='<td>'.$totalsalary.'$'.'</td>';
-    	 	$html[$key]['tdsource'] .='<td>';
-    	 	$html[$key]['tdsource'] .='<a class="btn btn-sm btn-'.$color.'" title="PaySlip" target="_blanks" href="'.route("employee.monthly.salary.payslip",$attend->employee_id).'">Fee Slip</a>';
-    	 	$html[$key]['tdsource'] .= '</td>';
+            $date = date('Y-m', strtotime($attendance->date));
+            $where = [];
 
-    	 }  
-    	return response()->json(@$html);
- 
+            if ($date != '') {
+                $where[] = ['date', 'like', $date.'%'];
+            }
 
-  } // END Method 
+            // Get employee attendance details
+            $data['details'] = EmployeeAttendance::with(['user'])
+                                ->where($where)
+                                ->where('employee_id', $employee_id)
+                                ->get();
 
+            // Generate PDF
+            $pdf = PDF::loadView('backend.employee.monthly_salary.monthly_salary_pdf', $data);
+            $pdf->SetProtection(['copy', 'print'], '', 'pass');
 
-  	public function MonthlySalaryPayslip(Request $request,$employee_id){
-  		$id = EmployeeAttendance::where('employee_id',$employee_id)->first();
-  		$date = date('Y-m',strtotime($id->date));
-    	 if ($date !='') {
-    	 	$where[] = ['date','like',$date.'%'];
-    	 }
+            return $pdf->stream('monthly_salary_slip.pdf');
 
-    $data['details'] = EmployeeAttendance::with(['user'])->where($where)->where('employee_id',$id->employee_id)->get();	 
+        } catch (\Exception $e) {
 
-    $pdf = PDF::loadView('backend.employee.monthly_salary.monthly_salary_pdf', $data);
-	$pdf->SetProtection(['copy', 'print'], '', 'pass');
-	return $pdf->stream('document.pdf');
+            Log::error('MonthlySalaryPayslip Error: '.$e->getMessage());
 
-  	}
-
-
+            return back()->with([
+                'message' => 'Failed to generate payslip!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 }
- 

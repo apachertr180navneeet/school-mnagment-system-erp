@@ -4,69 +4,119 @@ namespace App\Http\Controllers\Backend\Employee;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\AssignStudent;
 use App\Models\User;
-use App\Models\DiscountStudent;
-
-use App\Models\StudentYear;
-use App\Models\StudentClass;
-use App\Models\StudentGroup;
-use App\Models\StudentShift;
-use DB;
-use PDF;
-
-use App\Models\Designation;
 use App\Models\EmployeeSallaryLog;
+use Illuminate\Support\Facades\Log;
 
 class EmployeeSalaryController extends Controller
 {
+
+    /**
+     * 🔹 View all employees salary list
+     */
     public function SalaryView(){
-    	$data['allData'] = User::where('usertype','employee')->get();
-    	return view('backend.employee.employee_salary.employee_salary_view',$data);
+        try {
+
+            $data['allData'] = User::where('usertype', 'employee')->get();
+
+            return view('backend.employee.employee_salary.employee_salary_view', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('SalaryView Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load salary data!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
+    /**
+     * 🔹 Show salary increment form
+     */
     public function SalaryIncrement($id){
-    	$data['editData'] = User::find($id);
-    	return view('backend.employee.employee_salary.employee_salary_increment',$data);
+        try {
 
+            $data['editData'] = User::findOrFail($id);
+
+            return view('backend.employee.employee_salary.employee_salary_increment', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('SalaryIncrement Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Employee not found!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
+
+    /**
+     * 🔹 Store salary increment
+     */
     public function SalaryStore(Request $request, $id){
+        try {
 
-    	$user = User::find($id);
-    	$previous_salary = $user->salary;
-    	$present_salary = (float)$previous_salary+(float)$request->increment_salary; 
-    	$user->salary = $present_salary;
-    	$user->save();
+            $user = User::findOrFail($id);
 
-    	$salaryData = new EmployeeSallaryLog();
-    	$salaryData->employee_id = $id;
-    	$salaryData->previous_salary = $previous_salary;
-    	$salaryData->increment_salary = $request->increment_salary;
-    	$salaryData->present_salary = $present_salary;
-    	$salaryData->effected_salary = date('Y-m-d',strtotime($request->effected_salary));
-    	$salaryData->save();
+            $previous_salary = (float)$user->salary;
+            $increment = (float)$request->increment_salary;
+            $present_salary = $previous_salary + $increment;
 
-    	$notification = array(
-    		'message' => 'Employee Salary Increment Successfully',
-    		'alert-type' => 'success'
-    	);
+            // Update user salary
+            $user->salary = $present_salary;
+            $user->save();
 
-    	return redirect()->route('employee.salary.view')->with($notification);
+            // Save salary log
+            EmployeeSallaryLog::create([
+                'employee_id' => $id,
+                'previous_salary' => $previous_salary,
+                'increment_salary' => $increment,
+                'present_salary' => $present_salary,
+                'effected_salary' => date('Y-m-d', strtotime($request->effected_salary))
+            ]);
 
+            return redirect()->route('employee.salary.view')->with([
+                'message' => 'Salary Incremented Successfully',
+                'alert-type' => 'success'
+            ]);
+
+        } catch (\Exception $e) {
+
+            Log::error('SalaryStore Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Salary update failed!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
+    /**
+     * 🔹 Show salary details & history
+     */
     public function SalaryDetails($id){
-    	$data['details'] = User::find($id);
-    	$data['salary_log'] = EmployeeSallaryLog::where('employee_id',$data['details']->id)->get();
-    	//dd($data['salary_log']->toArray());
-    	return view('backend.employee.employee_salary.employee_salary_details',$data);
+        try {
 
+            $data['details'] = User::findOrFail($id);
+            $data['salary_log'] = EmployeeSallaryLog::where('employee_id', $id)->get();
+
+            return view('backend.employee.employee_salary.employee_salary_details', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('SalaryDetails Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load salary details!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
-
-
 
 }
- 

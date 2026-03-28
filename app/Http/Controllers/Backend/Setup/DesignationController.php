@@ -4,85 +4,166 @@ namespace App\Http\Controllers\Backend\Setup;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Designation; 
+use App\Models\Designation;
+use Illuminate\Support\Facades\Log;
 
 class DesignationController extends Controller
 {
+
+    /**
+     * 🔹 View all designations
+     */
     public function ViewDesignation(){
-    	$data['allData'] = Designation::all();
-    	return view('backend.setup.designation.view_designation',$data);
- 
+        try {
+
+            $data['allData'] = Designation::all();
+
+            return view('backend.setup.designation.view_designation', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('ViewDesignation Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load designations!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
-public function DesignationAdd(){
-    	return view('backend.setup.designation.add_designation');
+    /**
+     * 🔹 Show add designation page
+     */
+    public function DesignationAdd(){
+        try {
+
+            return view('backend.setup.designation.add_designation');
+
+        } catch (\Exception $e) {
+
+            Log::error('DesignationAdd Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load page!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
-public function DesignationStore(Request $request){
+    /**
+     * 🔹 Store new designation
+     */
+    public function DesignationStore(Request $request){
+        try {
 
-	    	$validatedData = $request->validate([
-	    		'name' => 'required|unique:designations,name',
-	    		
-	    	]);
+            // Validation
+            $request->validate([
+                'name' => 'required|unique:designations,name',
+            ]);
 
-	    	$data = new Designation();
-	    	$data->name = $request->name;
-	    	$data->save();
+            // Save
+            $data = new Designation();
+            $data->name = $request->name;
+            $data->save();
 
-	    	$notification = array(
-	    		'message' => 'Designation Inserted Successfully',
-	    		'alert-type' => 'success'
-	    	);
+            return redirect()->route('designation.view')->with([
+                'message' => 'Designation Inserted Successfully',
+                'alert-type' => 'success'
+            ]);
 
-	    return redirect()->route('designation.view')->with($notification);
+        } catch (\Exception $e) {
 
-	    }
+            Log::error('DesignationStore Error: '.$e->getMessage());
 
-
-
-public function DesignationEdit($id){
-	    	$editData = Designation::find($id);
-	    	return view('backend.setup.designation.edit_designation',compact('editData'));
-	    }
-
-
- public function DesignationUpdate(Request $request,$id){
-
-	 $data = Designation::find($id);
-     
-     $validatedData = $request->validate([
-    		'name' => 'required|unique:designations,name,'.$data->id
-    		
-    	]);
-
-    	
-    	$data->name = $request->name;
-    	$data->save();
-
-    	$notification = array(
-    		'message' => 'Designation Updated Successfully',
-    		'alert-type' => 'success'
-    	);
-
-    	return redirect()->route('designation.view')->with($notification);
+            return back()->with([
+                'message' => 'Failed to insert designation!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
-public function DesignationDelete($id){
-	    	$user = Designation::find($id);
-	    	$user->delete();
+    /**
+     * 🔹 Edit designation
+     */
+    public function DesignationEdit($id){
+        try {
 
-	    	$notification = array(
-	    		'message' => 'Designation Deleted Successfully',
-	    		'alert-type' => 'info'
-	    	);
+            $editData = Designation::findOrFail($id);
 
-	   return redirect()->route('designation.view')->with($notification);
+            return view('backend.setup.designation.edit_designation', compact('editData'));
 
-	    }
+        } catch (\Exception $e) {
+
+            Log::error('DesignationEdit Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Designation not found!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 
+    /**
+     * 🔹 Update designation
+     */
+    public function DesignationUpdate(Request $request, $id){
+        try {
 
-} 
+            $data = Designation::findOrFail($id);
+
+            // Validation
+            $request->validate([
+                'name' => 'required|unique:designations,name,'.$data->id
+            ]);
+
+            // Update
+            $data->name = $request->name;
+            $data->save();
+
+            return redirect()->route('designation.view')->with([
+                'message' => 'Designation Updated Successfully',
+                'alert-type' => 'success'
+            ]);
+
+        } catch (\Exception $e) {
+
+            Log::error('DesignationUpdate Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Update failed!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
+
+
+    /**
+     * 🔹 Delete designation
+     */
+    public function DesignationDelete($id){
+        try {
+
+            $designation = Designation::findOrFail($id);
+            $designation->delete();
+
+            return redirect()->route('designation.view')->with([
+                'message' => 'Designation Deleted Successfully',
+                'alert-type' => 'info'
+            ]);
+
+        } catch (\Exception $e) {
+
+            Log::error('DesignationDelete Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Delete failed!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
+
+}

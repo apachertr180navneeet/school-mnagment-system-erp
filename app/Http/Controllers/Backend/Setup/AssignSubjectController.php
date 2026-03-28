@@ -5,107 +5,191 @@ namespace App\Http\Controllers\Backend\Setup;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SchoolSubject;
-use App\Models\StudentClass; 
+use App\Models\StudentClass;
 use App\Models\AssignSubject;
+use Illuminate\Support\Facades\Log;
 
 class AssignSubjectController extends Controller
 {
+
+    /**
+     * 🔹 View assigned subjects (grouped by class)
+     */
     public function ViewAssignSubject(){
-      // $data['allData'] = AssignSubject::all();
-        $data['allData'] = AssignSubject::select('class_id')->groupBy('class_id')->get();
-    	return view('backend.setup.assign_subject.view_assign_subject',$data);
+        try {
+
+            $data['allData'] = AssignSubject::select('class_id')
+                                ->groupBy('class_id')
+                                ->get();
+
+            return view('backend.setup.assign_subject.view_assign_subject', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('ViewAssignSubject Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load data!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
-     public function AddAssignSubject(){
-    	$data['subjects'] = SchoolSubject::all();
-    	$data['classes'] = StudentClass::all();
-    	return view('backend.setup.assign_subject.add_assign_subject',$data);
+    /**
+     * 🔹 Show add assign subject page
+     */
+    public function AddAssignSubject(){
+        try {
+
+            $data['subjects'] = SchoolSubject::all();
+            $data['classes']  = StudentClass::all();
+
+            return view('backend.setup.assign_subject.add_assign_subject', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('AddAssignSubject Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load page!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
-	public function StoreAssignSubject(Request $request){
+    /**
+     * 🔹 Store assigned subjects
+     */
+    public function StoreAssignSubject(Request $request){
+        try {
 
-	    	$subjectCount = count($request->subject_id);
-	    	if ($subjectCount !=NULL) {
-	    		for ($i=0; $i <$subjectCount ; $i++) { 
-	    			$assign_subject = new AssignSubject();
-	    			$assign_subject->class_id = $request->class_id;
-	    			$assign_subject->subject_id = $request->subject_id[$i];
-	    			$assign_subject->full_mark = $request->full_mark[$i];
-	    			$assign_subject->pass_mark = $request->pass_mark[$i];
-	    			$assign_subject->subjective_mark = $request->subjective_mark[$i];
-	    			$assign_subject->save();
+            if (!empty($request->subject_id)) {
 
-	    		} // End For Loop
-	    	}// End If Condition
+                foreach ($request->subject_id as $index => $subject_id) {
 
-	    	$notification = array(
-	    		'message' => 'Subject Assign Inserted Successfully',
-	    		'alert-type' => 'success'
-	    	);
+                    $assign_subject = new AssignSubject();
+                    $assign_subject->class_id = $request->class_id;
+                    $assign_subject->subject_id = $subject_id;
+                    $assign_subject->full_mark = $request->full_mark[$index];
+                    $assign_subject->pass_mark = $request->pass_mark[$index];
+                    $assign_subject->subjective_mark = $request->subjective_mark[$index];
+                    $assign_subject->save();
+                }
+            }
 
-	    	return redirect()->route('assign.subject.view')->with($notification);
+            return redirect()->route('assign.subject.view')->with([
+                'message' => 'Subjects Assigned Successfully',
+                'alert-type' => 'success'
+            ]);
 
-	    }  // End Method 
+        } catch (\Exception $e) {
 
+            Log::error('StoreAssignSubject Error: '.$e->getMessage());
 
-	 public function EditAssignSubject($class_id){
-	    	$data['editData'] = AssignSubject::where('class_id',$class_id)->orderBy('subject_id','asc')->get();
-	    	// dd($data['editData']->toArray());
-	    $data['subjects'] = SchoolSubject::all();
-    	$data['classes'] = StudentClass::all();
-    	return view('backend.setup.assign_subject.edit_assign_subject',$data);
-
-	    }
-
-
-public function UpdateAssignSubject(Request $request,$class_id){
-    	if ($request->subject_id == NULL) {
-       
-        $notification = array(
-    		'message' => 'Sorry You do not select any Subject',
-    		'alert-type' => 'error'
-    	);
-
-    	return redirect()->route('assign.subject.edit',$class_id)->with($notification);
-    		 
-    	}else{
-    		 
-    $countClass = count($request->subject_id);
-	AssignSubject::where('class_id',$class_id)->delete(); 
-    		for ($i=0; $i <$countClass ; $i++) { 
-    			$assign_subject = new AssignSubject();
-	    			$assign_subject->class_id = $request->class_id;
-	    			$assign_subject->subject_id = $request->subject_id[$i];
-	    			$assign_subject->full_mark = $request->full_mark[$i];
-	    			$assign_subject->pass_mark = $request->pass_mark[$i];
-	    			$assign_subject->subjective_mark = $request->subjective_mark[$i];
-	    			$assign_subject->save();
-
-    		} // End For Loop	 
-
-    	}// end Else
-
-       $notification = array(
-    		'message' => 'Data Updated Successfully',
-    		'alert-type' => 'success'
-    	);
-
-    	return redirect()->route('assign.subject.view')->with($notification);
-    } // end Method 
+            return back()->with([
+                'message' => 'Assignment failed!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 
-	public function DetailsAssignSubject($class_id){
-   $data['detailsData'] = AssignSubject::where('class_id',$class_id)->orderBy('subject_id','asc')->get();
+    /**
+     * 🔹 Edit assigned subjects
+     */
+    public function EditAssignSubject($class_id){
+        try {
 
-   return view('backend.setup.assign_subject.details_assign_subject',$data);
+            $data['editData'] = AssignSubject::where('class_id', $class_id)
+                                ->orderBy('subject_id', 'asc')
+                                ->get();
+
+            $data['subjects'] = SchoolSubject::all();
+            $data['classes']  = StudentClass::all();
+
+            return view('backend.setup.assign_subject.edit_assign_subject', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('EditAssignSubject Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load data!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 
- 	}
+    /**
+     * 🔹 Update assigned subjects
+     */
+    public function UpdateAssignSubject(Request $request, $class_id){
+        try {
+
+            if (empty($request->subject_id)) {
+
+                return redirect()->route('assign.subject.edit', $class_id)->with([
+                    'message' => 'Please select at least one subject!',
+                    'alert-type' => 'error'
+                ]);
+            }
+
+            // Delete old subjects
+            AssignSubject::where('class_id', $class_id)->delete();
+
+            // Insert new subjects
+            foreach ($request->subject_id as $index => $subject_id) {
+
+                $assign_subject = new AssignSubject();
+                $assign_subject->class_id = $request->class_id;
+                $assign_subject->subject_id = $subject_id;
+                $assign_subject->full_mark = $request->full_mark[$index];
+                $assign_subject->pass_mark = $request->pass_mark[$index];
+                $assign_subject->subjective_mark = $request->subjective_mark[$index];
+                $assign_subject->save();
+            }
+
+            return redirect()->route('assign.subject.view')->with([
+                'message' => 'Subjects Updated Successfully',
+                'alert-type' => 'success'
+            ]);
+
+        } catch (\Exception $e) {
+
+            Log::error('UpdateAssignSubject Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Update failed!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 
+    /**
+     * 🔹 Show assigned subject details
+     */
+    public function DetailsAssignSubject($class_id){
+        try {
 
+            $data['detailsData'] = AssignSubject::where('class_id', $class_id)
+                                    ->orderBy('subject_id', 'asc')
+                                    ->get();
+
+            return view('backend.setup.assign_subject.details_assign_subject', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('DetailsAssignSubject Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load details!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 }
- 

@@ -4,119 +4,188 @@ namespace App\Http\Controllers\Backend\Employee;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\AssignStudent;
 use App\Models\User;
-use App\Models\DiscountStudent;
-
-use App\Models\StudentYear;
-use App\Models\StudentClass;
-use App\Models\StudentGroup;
-use App\Models\StudentShift;
-use DB;
-use PDF;
-
-use App\Models\Designation;
-use App\Models\EmployeeSallaryLog;
-
 use App\Models\EmployeeLeave;
 use App\Models\LeavePurpose;
+use Illuminate\Support\Facades\Log;
 
 class EmployeeLeaveController extends Controller
 {
+
+    /**
+     * 🔹 View all employee leave data
+     */
     public function LeaveView(){
-    	$data['allData'] = EmployeeLeave::orderBy('id','desc')->get();
-    	return view('backend.employee.employee_leave.employee_leave_view',$data);
+        try {
+
+            $data['allData'] = EmployeeLeave::orderBy('id', 'desc')->get();
+
+            return view('backend.employee.employee_leave.employee_leave_view', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('LeaveView Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load leave data!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
+    /**
+     * 🔹 Show add leave form
+     */
     public function LeaveAdd(){
+        try {
 
-    	$data['employees'] = User::where('usertype','employee')->get();
-    	$data['leave_purpose'] = LeavePurpose::all();
-    	return view('backend.employee.employee_leave.employee_leave_add',$data);
+            $data['employees'] = User::where('usertype', 'employee')->get();
+            $data['leave_purpose'] = LeavePurpose::all();
+
+            return view('backend.employee.employee_leave.employee_leave_add', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('LeaveAdd Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Failed to load page!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
+    /**
+     * 🔹 Store employee leave
+     */
     public function LeaveStore(Request $request){
+        try {
 
-    	if ($request->leave_purpose_id == "0") {
-    		$leavepurpose = new LeavePurpose();
-    		$leavepurpose->name = $request->name;
-    		$leavepurpose->save();
-    		$leave_purpose_id = $leavepurpose->id;
-    	}else{
-    		$leave_purpose_id = $request->leave_purpose_id;
-    	}
+            // Handle new leave purpose
+            if ($request->leave_purpose_id == "0") {
+                $leavepurpose = new LeavePurpose();
+                $leavepurpose->name = $request->name;
+                $leavepurpose->save();
+                $leave_purpose_id = $leavepurpose->id;
+            } else {
+                $leave_purpose_id = $request->leave_purpose_id;
+            }
 
-    	$data = new EmployeeLeave();
-    	$data->employee_id = $request->employee_id;
-    	$data->leave_purpose_id = $leave_purpose_id;
-    	$data->start_date = date('Y-m-d',strtotime($request->start_date));
-    	$data->end_date = date('Y-m-d',strtotime($request->end_date));
-    	$data->save();
+            // Save leave data
+            $data = new EmployeeLeave();
+            $data->employee_id = $request->employee_id;
+            $data->leave_purpose_id = $leave_purpose_id;
+            $data->start_date = date('Y-m-d', strtotime($request->start_date));
+            $data->end_date = date('Y-m-d', strtotime($request->end_date));
+            $data->save();
 
-    	$notification = array(
-    		'message' => 'Employee Leave Data Inserted Successfully',
-    		'alert-type' => 'success'
-    	);
+            return redirect()->route('employee.leave.view')->with([
+                'message' => 'Employee Leave Inserted Successfully',
+                'alert-type' => 'success'
+            ]);
 
-    	return redirect()->route('employee.leave.view')->with($notification);
+        } catch (\Exception $e) {
 
-    }// end Method 
+            Log::error('LeaveStore Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Leave creation failed!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 
-
+    /**
+     * 🔹 Edit leave
+     */
     public function LeaveEdit($id){
-    	$data['editData'] = EmployeeLeave::find($id);
-    	$data['employees'] = User::where('usertype','employee')->get();
-    	$data['leave_purpose'] = LeavePurpose::all();
-    	return view('backend.employee.employee_leave.employee_leave_edit',$data);
+        try {
 
+            $data['editData'] = EmployeeLeave::findOrFail($id);
+            $data['employees'] = User::where('usertype', 'employee')->get();
+            $data['leave_purpose'] = LeavePurpose::all();
+
+            return view('backend.employee.employee_leave.employee_leave_edit', $data);
+
+        } catch (\Exception $e) {
+
+            Log::error('LeaveEdit Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Leave not found!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
 
+    /**
+     * 🔹 Update leave
+     */
+    public function LeaveUpdate(Request $request, $id){
+        try {
 
-    public function LeaveUpdate(Request $request,$id){
+            // Handle new leave purpose
+            if ($request->leave_purpose_id == "0") {
+                $leavepurpose = new LeavePurpose();
+                $leavepurpose->name = $request->name;
+                $leavepurpose->save();
+                $leave_purpose_id = $leavepurpose->id;
+            } else {
+                $leave_purpose_id = $request->leave_purpose_id;
+            }
 
-    	if ($request->leave_purpose_id == "0") {
-    		$leavepurpose = new LeavePurpose();
-    		$leavepurpose->name = $request->name;
-    		$leavepurpose->save();
-    		$leave_purpose_id = $leavepurpose->id;
-    	}else{
-    		$leave_purpose_id = $request->leave_purpose_id;
-    	}
+            // Update leave
+            $data = EmployeeLeave::findOrFail($id);
+            $data->employee_id = $request->employee_id;
+            $data->leave_purpose_id = $leave_purpose_id;
+            $data->start_date = date('Y-m-d', strtotime($request->start_date));
+            $data->end_date = date('Y-m-d', strtotime($request->end_date));
+            $data->save();
 
-    	$data = EmployeeLeave::find($id);
-    	$data->employee_id = $request->employee_id;
-    	$data->leave_purpose_id = $leave_purpose_id;
-    	$data->start_date = date('Y-m-d',strtotime($request->start_date));
-    	$data->end_date = date('Y-m-d',strtotime($request->end_date));
-    	$data->save();
+            return redirect()->route('employee.leave.view')->with([
+                'message' => 'Employee Leave Updated Successfully',
+                'alert-type' => 'success'
+            ]);
 
-    	$notification = array(
-    		'message' => 'Employee Leave Data Updated Successfully',
-    		'alert-type' => 'success'
-    	);
+        } catch (\Exception $e) {
 
-    	return redirect()->route('employee.leave.view')->with($notification);
+            Log::error('LeaveUpdate Error: '.$e->getMessage());
 
-    } // end Method 
-
+            return back()->with([
+                'message' => 'Leave update failed!',
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 
 
+    /**
+     * 🔹 Delete leave
+     */
     public function LeaveDelete($id){
-    	$leave = EmployeeLeave::find($id);
-    	$leave->delete();
+        try {
 
-    	$notification = array(
-    		'message' => 'Employee Leave Data Deleted Successfully',
-    		'alert-type' => 'success'
-    	);
+            $leave = EmployeeLeave::findOrFail($id);
+            $leave->delete();
 
-    	return redirect()->route('employee.leave.view')->with($notification);
+            return redirect()->route('employee.leave.view')->with([
+                'message' => 'Employee Leave Deleted Successfully',
+                'alert-type' => 'success'
+            ]);
+
+        } catch (\Exception $e) {
+
+            Log::error('LeaveDelete Error: '.$e->getMessage());
+
+            return back()->with([
+                'message' => 'Leave delete failed!',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
-
-
-} 
+}

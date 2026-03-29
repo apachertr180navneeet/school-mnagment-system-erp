@@ -1,76 +1,66 @@
 @extends('admin.admin_master')
+
 @section('admin')
 
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
 
- <div class="content-wrapper">
-	  <div class="container-full">
-		<!-- Content Header (Page header) -->
-		 
+            <div class="card shadow-sm">
+                
+                <!-- Header -->
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Student Class List</h4>
+                    <a href="{{ route('student.class.add') }}" class="btn btn-success">
+                        + Add Student Class
+                    </a>
+                </div>
 
-		<!-- Main content -->
-		<section class="content">
-		  <div class="row">
-			  
-			 
+                <!-- Body -->
+                <div class="card-body">
 
-			<div class="col-12">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle">
+                            
+                            <thead class="table-dark">
+                                <tr>
+                                    <th width="5%">SL</th>
+                                    <th>Name</th>
+                                    <th width="25%" class="text-center">Action</th>
+                                </tr>
+                            </thead>
 
-			 <div class="box">
-				<div class="box-header with-border">
-				  <h3 class="box-title">Student Class List</h3>
-	<a href="{{ route('student.class.add') }}" style="float: right;" class="btn btn-rounded btn-success mb-5"> Add Student Class</a>			  
+                            <tbody>
+                                @foreach($allData as $key => $student)
+                                <tr>
+                                    <td>{{ $key + 1 }}</td>
+                                    <td>{{ $student->name }}</td>
+                                    <td class="text-center">
+                                        
+                                        <a href="{{ route('student.class.edit', $student->id) }}" 
+                                           class="btn btn-sm btn-primary">
+                                            Edit
+                                        </a>
 
-				</div>
-				<!-- /.box-header -->
-				<div class="box-body">
-					<div class="table-responsive">
-					  <table id="example1" class="table table-bordered table-striped">
-						<thead>
-			<tr>
-				<th width="5%">SL</th>  
-				<th>Name</th> 
-				<th width="25%">Action</th>
-				 
-			</tr>
-		</thead>
-		<tbody>
-			@foreach($allData as $key => $student )
-			<tr>
-				<td>{{ $key+1 }}</td>
-				<td> {{ $student->name }}</td>				 
-				<td>
-<a href="{{ route('student.class.edit',$student->id) }}" class="btn btn-info">Edit</a>
-<a href="{{ route('student.class.delete',$student->id) }}" class="btn btn-danger" id="delete">Delete</a>
+                                        <a href="{{ route('student.class.delete', $student->id) }}" 
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Are you sure you want to delete this?')">
+                                            Delete
+                                        </a>
 
-				</td>
-				 
-			</tr>
-			@endforeach
-							 
-						</tbody>
-						<tfoot>
-							 
-						</tfoot>
-					  </table>
-					</div>
-				</div>
-				<!-- /.box-body -->
-			  </div>
-			  <!-- /.box -->
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
 
-			       
-			</div>
-			<!-- /.col -->
-		  </div>
-		  <!-- /.row -->
-		</section>
-		<!-- /.content -->
-	  
-	  </div>
-  </div>
+                        </table>
+                    </div>
 
+                </div>
+            </div>
 
-
-
+        </div>
+    </div>
+</div>
 
 @endsection

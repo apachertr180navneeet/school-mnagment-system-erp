@@ -9,6 +9,40 @@ use Illuminate\Support\Facades\Log;
 class AdminController extends Controller
 {
 
+    public function dashboard()
+    {
+        return view('admin.index', [
+
+            'totalStudents' => '30',
+            'totalTeachers' => '40',
+            'totalFees' => '50',
+            'attendance' => '92%',
+
+            // ✅ Static recent students
+            'recentStudents' => [
+                (object)[
+                    'name' => 'Rahul',
+                    'class' => '10th',
+                    'status' => 'Active'
+                ],
+                (object)[
+                    'name' => 'Pooja',
+                    'class' => '9th',
+                    'status' => 'Pending'
+                ],
+                (object)[
+                    'name' => 'Amit',
+                    'class' => '8th',
+                    'status' => 'Active'
+                ],
+            ],
+
+            // ✅ Chart static data
+            'months' => ['Jan','Feb','Mar','Apr'],
+            'studentCounts' => [200, 400, 600, 900]
+        ]);
+    }
+
     /**
      * 🔹 Logout Admin User
      */

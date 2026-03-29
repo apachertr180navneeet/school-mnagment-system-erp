@@ -13,126 +13,171 @@
 <!-- Icons -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+
 <style>
 
-/* RESET */
-body {
-    margin: 0;
-    padding: 0;
-    background: #f4f6f9;
-}
+    /* RESET */
+    body {
+        margin: 0;
+        padding: 0;
+        background: #f4f6f9;
+    }
 
-/* SIDEBAR */
-.main-sidebar {
-    width: 250px;
-    height: 100vh;
-    position: fixed;
-    top: 0;
-    left: 0;
-    background: #0f172a;
-    color: #fff;
-    z-index: 1000;
-    transition: all 0.3s ease;
-    overflow-y: auto;
-}
-
-/* SIDEBAR LINKS */
-.sidebar a {
-    display: block;
-    padding: 12px 20px;
-    color: #cbd5e1;
-    text-decoration: none;
-    transition: 0.3s;
-}
-
-.sidebar a:hover {
-    background: #1e293b;
-    color: #fff;
-}
-
-.sidebar .active {
-    background: #2563eb;
-    color: #fff;
-}
-
-/* HEADER */
-.main-header {
-    position: fixed;
-    top: 0;
-    left: 250px;
-    right: 0;
-    z-index: 999;
-    transition: all 0.3s ease;
-}
-
-/* CONTENT */
-.content-wrapper {
-    margin-left: 250px;
-    margin-top: 70px;
-    padding: 20px;
-    transition: all 0.3s ease;
-}
-
-/* FOOTER */
-.main-footer {
-    margin-left: 250px;
-    background: #fff;
-}
-
-/* MOBILE */
-@media (max-width: 991px) {
-
+    /* SIDEBAR */
     .main-sidebar {
-        left: -250px;
-    }
-
-    .main-sidebar.active {
+        width: 250px;
+        height: 100vh;
+        position: fixed;
+        top: 0;
         left: 0;
+        background: #0f172a;
+        color: #fff;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        overflow-y: auto;
     }
 
-    .content-wrapper {
-        margin-left: 0;
+    /* SIDEBAR LINKS */
+    .sidebar a {
+        display: block;
+        padding: 12px 20px;
+        color: #cbd5e1;
+        text-decoration: none;
+        transition: 0.3s;
     }
 
+    .sidebar a:hover {
+        background: #1e293b;
+        color: #fff;
+    }
+
+    .sidebar .active {
+        background: #2563eb;
+        color: #fff;
+    }
+
+    /* HEADER */
     .main-header {
-        left: 0;
+        position: fixed;
+        top: 0;
+        left: 250px;
+        right: 0;
+        z-index: 999;
+        transition: all 0.3s ease;
     }
 
+    /* CONTENT */
+    .content-wrapper {
+        margin-left: 250px;
+        margin-top: 70px;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+
+    /* FOOTER */
     .main-footer {
-        margin-left: 0;
+        margin-left: 250px;
+        background: #fff;
     }
-}
 
-/* OVERLAY */
-#overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: none;
-    z-index: 999;
-}
+    /* MOBILE */
+    @media (max-width: 991px) {
 
-#overlay.active {
-    display: block;
-}
+        .main-sidebar {
+            left: -250px;
+        }
 
-/* DESKTOP COLLAPSE */
-.main-sidebar.collapsed {
-    width: 80px;
-}
+        .main-sidebar.active {
+            left: 0;
+        }
 
-.content-wrapper.collapsed {
-    margin-left: 80px;
-}
+        .content-wrapper {
+            margin-left: 0;
+        }
 
-.main-header.collapsed {
-    left: 80px;
-}
+        .main-header {
+            left: 0;
+        }
 
+        .main-footer {
+            margin-left: 0;
+        }
+    }
+
+    /* OVERLAY */
+    #overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        z-index: 999;
+    }
+
+    #overlay.active {
+        display: block;
+    }
+
+    /* DESKTOP COLLAPSE */
+    .main-sidebar.collapsed {
+        width: 80px;
+    }
+
+    .content-wrapper.collapsed {
+        margin-left: 80px;
+    }
+
+    .main-header.collapsed {
+        left: 80px;
+    }
+
+    /* Top section spacing */
+    .dataTables_wrapper .dataTables_length {
+        margin-bottom: 10px;
+    }
+
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 10px;
+    }
+
+    /* Add space between left & right */
+    .dataTables_wrapper .row:first-child {
+        margin-bottom: 15px;
+    }
+
+    /* Optional: align nicely */
+    .dataTables_wrapper .dataTables_length {
+        float: left;
+    }
+
+    .dataTables_wrapper .dataTables_filter {
+        float: right;
+    }
+
+    .table {
+        border-collapse: collapse !important;
+    }
+
+    .table th, 
+    .table td {
+        border: 1px solid #dee2e6 !important;
+        padding: 10px;
+    }
+
+    .table thead th {
+        background-color: #212529;
+        color: #fff;
+    }
+
+    .table tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
 </style>
+
 
 </head>
 
@@ -156,7 +201,10 @@ body {
 @include('admin.body.footer')
 
 <!-- JS -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+@yield('script')
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {

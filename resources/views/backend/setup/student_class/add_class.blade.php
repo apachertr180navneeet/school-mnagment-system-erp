@@ -1,72 +1,69 @@
 @extends('admin.admin_master')
+
 @section('admin')
 
+<div class="container py-3 py-md-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-6">
 
- <div class="content-wrapper">
-	  <div class="container-full">
-		<!-- Content Header (Page header) -->
-	
+            <div class="card shadow-sm border-0">
 
-<section class="content">
+                <!-- Header -->
+                <div class="card-header d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                    <h5 class="mb-0">Add Student Class</h5>
 
-		 <!-- Basic Forms -->
-		  <div class="box">
-			<div class="box-header with-border">
-			  <h4 class="box-title">Add Student Class</h4>
-			  
-			</div>
-			<!-- /.box-header -->
-			<div class="box-body">
-			  <div class="row">
-				<div class="col">
+                    <a href="{{ route('student.class.view') }}" 
+                       class="btn btn-secondary btn-sm w-20 w-sm-auto">
+                        ← Back
+                    </a>
+                </div>
 
-	 <form method="post" action="{{ route('store.student.class') }}">
-	 	@csrf
-					  <div class="row">
-						<div class="col-12">	
- 
+                <!-- Body -->
+                <div class="card-body">
 
- 
+                    <form method="post" action="{{ route('store.student.class') }}">
+                        @csrf
 
-		<div class="form-group">
-		<h5>Student Class Name <span class="text-danger">*</span></h5>
-		<div class="controls">
-	 <input type="text" name="name" class="form-control" > 
-	 @error('name')
-	 <span class="text-danger">{{ $message }}</span>
-	 @enderror
-	  </div>
-		 
-	</div>
- 
-	  
-  
-							 
-						<div class="text-xs-right">
-	 <input type="submit" class="btn btn-rounded btn-info mb-5" value="Submit">
-						</div>
-					</form>
+                        <!-- Class Name -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Student Class Name <span class="text-danger">*</span>
+                            </label>
 
-				</div>
-				<!-- /.col -->
-			  </div>
-			  <!-- /.row -->
-			</div>
-			<!-- /.box-body -->
-		  </div>
-		  <!-- /.box -->
+                            <input type="text" 
+								name="name" 
+								value="{{ old('name') }}"
+								class="form-control @error('name') is-invalid @enderror">
 
-		</section>
+							@error('name')
+								<div class="invalid-feedback">
+									{{ $message }}
+								</div>
+							@enderror
+                        </div>
 
+                        <!-- Buttons -->
+                        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4">
+                            
+                            <a href="{{ route('student.class.view') }}" 
+                               class="btn btn-outline-secondary w-100 w-sm-auto">
+                                Cancel
+                            </a>
 
- 
- 
-	  
-	  </div>
-  </div>
+                            <button type="submit" 
+                                    class="btn btn-success w-100 w-sm-auto px-4">
+                                Submit
+                            </button>
 
+                        </div>
 
+                    </form>
 
+                </div>
+            </div>
 
+        </div>
+    </div>
+</div>
 
 @endsection

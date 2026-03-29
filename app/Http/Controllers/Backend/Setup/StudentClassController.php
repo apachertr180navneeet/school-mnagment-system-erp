@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\StudentClass;
 use Illuminate\Support\Facades\Log;
+use Yajra\DataTables\Facades\DataTables;
 
 class StudentClassController extends Controller
 {
@@ -13,12 +14,32 @@ class StudentClassController extends Controller
     /**
      * 🔹 View all student classes
      */
-    public function ViewStudent(){
+    public function ViewStudent(Request $request)
+    {
         try {
 
-            $data['allData'] = StudentClass::all();
+            if ($request->ajax()) {
 
-            return view('backend.setup.student_class.view_class', $data);
+                $data = StudentClass::select(['id', 'name']);
+
+                return DataTables::of($data)
+                    ->addIndexColumn()
+
+                    ->addColumn('action', function ($row) {
+                        $edit = '<a href="'.route('student.class.edit', $row->id).'" class="btn btn-sm btn-primary">Edit</a>';
+
+                        $delete = '<a href="'.route('student.class.delete', $row->id).'" 
+                                    class="btn btn-sm btn-danger"
+                                    onclick="return confirm(\'Are you sure?\')">Delete</a>';
+
+                        return $edit . ' ' . $delete;
+                    })
+
+                    ->rawColumns(['action'])
+                    ->make(true);
+            }
+
+            return view('backend.setup.student_class.view_class');
 
         } catch (\Exception $e) {
 
@@ -55,15 +76,18 @@ class StudentClassController extends Controller
     /**
      * 🔹 Store student class
      */
-    public function StudentClassStore(Request $request){
+    public function StudentClassStore(Request $request)
+    {
+        // ✅ KEEP validation OUTSIDE try-catch
+        $request->validate([
+            'name' => 'required|unique:student_classes,name',
+        ], [
+            'name.required' => 'Class name is required!',
+            'name.unique'   => 'This class already exists!',
+        ]);
+
         try {
 
-            // Validation
-            $request->validate([
-                'name' => 'required|unique:student_classes,name',
-            ]);
-
-            // Save
             $data = new StudentClass();
             $data->name = $request->name;
             $data->save();
@@ -110,15 +134,19 @@ class StudentClassController extends Controller
     /**
      * 🔹 Update student class
      */
-    public function StudentClassUpdate(Request $request, $id){
+    public function StudentClassUpdate(Request $request, $id)
+    {
+        $data = StudentClass::findOrFail($id);
+
+        // ✅ Validation OUTSIDE try
+        $request->validate([
+            'name' => 'required|unique:student_classes,name,' . $data->id
+        ], [
+            'name.required' => 'Class name is required!',
+            'name.unique'   => 'This class already exists!',
+        ]);
+
         try {
-
-            $data = StudentClass::findOrFail($id);
-
-            // Validation
-            $request->validate([
-                'name' => 'required|unique:student_classes,name,'.$data->id
-            ]);
 
             // Update
             $data->name = $request->name;
@@ -131,7 +159,7 @@ class StudentClassController extends Controller
 
         } catch (\Exception $e) {
 
-            Log::error('StudentClassUpdate Error: '.$e->getMessage());
+            Log::error('StudentClassUpdate Error: ' . $e->getMessage());
 
             return back()->with([
                 'message' => 'Update failed!',

@@ -20,7 +20,7 @@
                 <div class="card-body">
 
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle">
+                        <table class="table table-bordered table-hover align-middle mt-2 mb-2">
                             
                             <thead class="table-dark">
                                 <tr>
@@ -30,28 +30,7 @@
                                 </tr>
                             </thead>
 
-                            <tbody>
-                                @foreach($allData as $key => $student)
-                                <tr>
-                                    <td>{{ $key + 1 }}</td>
-                                    <td>{{ $student->name }}</td>
-                                    <td class="text-center">
-                                        
-                                        <a href="{{ route('student.class.edit', $student->id) }}" 
-                                           class="btn btn-sm btn-primary">
-                                            Edit
-                                        </a>
-
-                                        <a href="{{ route('student.class.delete', $student->id) }}" 
-                                           class="btn btn-sm btn-danger"
-                                           onclick="return confirm('Are you sure you want to delete this?')">
-                                            Delete
-                                        </a>
-
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
+                            <tbody></tbody>
 
                         </table>
                     </div>
@@ -63,4 +42,23 @@
     </div>
 </div>
 
+@endsection
+
+
+@section('script')
+    <script>
+        $(document).ready(function () {
+            $('.table').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('student.class.view') }}",
+
+                columns: [
+                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'name', name: 'name' },
+                    { data: 'action', name: 'action', orderable: false, searchable: false }
+                ]
+            });
+        });
+    </script>
 @endsection

@@ -2,7 +2,7 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-3">
 
         <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-light" id="menu-toggle">
+            <button class="btn btn-light" id="sidebarToggle">
                 <i class="bi bi-list"></i>
             </button>
             <h5 class="mb-0">Dashboard</h5>
